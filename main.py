@@ -52,7 +52,7 @@ def upgrade_node(inventory):
     upgrade and reboot a given node
     '''
     run = ansible.runner.Runner(
-        module_name = 'apt_update.yml',
+        module_name = 'apt_upgrade.yml',
         timeout = 5,
         inventory = inventory,
         subset = 'all'
