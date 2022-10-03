@@ -7,13 +7,12 @@ from ansible import callbacks
 from ansible import utils
 import json
 
-from kubernetes import client, config, watch
 
-
-def k8s_ok(api) -> bool:
+def k8s_ok(client, logging) -> bool:
     '''
     check readiness of kubernetes
     '''
+    api = client.CoreV1Api()
     node_list = api.list_node()
 
     for node in node_list.items:
@@ -25,11 +24,11 @@ def k8s_ok(api) -> bool:
         return true
 
 
-def ceph_ok(api) -> bool:
+def ceph_ok(client, logging) -> bool:
     '''
     check readiness of cephcluster crd in kubernetes
     '''
-    api = client.CustomObjectsApi() #perhaps
+    api = client.CustomObjectsApi()
 
     # CephCluster crd defined at https://github.com/rook/rook/blob/master/deploy/examples/crds.yaml line 841
     resource = api.get_namespaced_custom_object(
@@ -39,13 +38,15 @@ def ceph_ok(api) -> bool:
         namespace="rook-ceph",
         plural="cephclusters",
     )
-    print("Resource details:")
-    pprint(resource)
 
-    if "HEALTH_OK" in resource: # this is phony
-        return true
-    else
-        return false
+    health = resource.get('status').get('ceph').get('health')
+    logging.info('ceph state is ' + health)
+
+    if health == "HEALTH_OK":
+        return True
+    else:
+        return False
+
 
 def upgrade_node(inventory):
     '''
@@ -59,24 +60,33 @@ def upgrade_node(inventory):
     )
 
     out = pm.run()
-    print json.dumps(out, sort_keys=True, indent=4, separators=(',', ': '))
+    print(json.dumps(out, sort_keys=True, indent=4, separators=(',', ': ')))
 
 
 if __name__ == '__main__':
-    '''
-    we expect some HA cluster-wide endpoint to exist, in order to continue to
-    use the k8s api while waiting for a node to reboot
-    '''
-    k8s_endpoint = ''
-    hosts = []
+    def privileged_main():
+        from kubernetes import client, config, watch
+        import logging
 
-    config.load_kube_config()
-    k8s_v1 = client.CoreV1Api()
+        '''
+        we expect some HA cluster-wide endpoint to exist, in order to continue to
+        use the k8s api while waiting for a node to reboot
+        '''
+        k8s_endpoint = ''
+        hosts = []
 
-    for n in hosts:
-        ephemeral_inventory = ansible.inventory.Inventory(hosts)
-        upgrade_node(ephemeral_inventory)
-        wait_until:
+        logging.basicConfig(level=logging.INFO)
+        config.load_kube_config()
+
+        k8s_ok(client, logging)
+        ceph_ok(client, logging)
+
+        for n in hosts:
+            ephemeral_inventory = ansible.inventory.Inventory(hosts)
+            upgrade_node(ephemeral_inventory)
+            # wait_until:
             k8s_ok(k8s_v1)
-        wait_until:
+            # wait_until:
             ceph_ok(k8s_v1)
+
+    privileged_main()
