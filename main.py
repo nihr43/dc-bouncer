@@ -2,7 +2,6 @@
 
 import json
 import time
-import os
 
 def k8s_ok(client, logging) -> bool:
     '''
@@ -68,6 +67,7 @@ if __name__ == '__main__':
         import ansible_runner
 
         import logging
+        import os
 
         hosts = ['10.0.200.1','10.0.200.3','10.0.254.253']
 
