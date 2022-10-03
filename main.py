@@ -5,7 +5,7 @@ import time
 
 def k8s_ok(client, logging) -> bool:
     '''
-    check readiness of kubernetes
+    check readiness of each kubernetes node
     '''
     api = client.CoreV1Api()
     node_list = api.list_node()
