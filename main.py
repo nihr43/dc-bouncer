@@ -55,7 +55,8 @@ def upgrade_node(ansible_runner, host, os):
     upgrade and reboot a given node
     '''
     # ansible-runner apppears to leave behind a non-writable artifact:
-    os.remove("./inventory/hosts")
+    if os.path.isfile("./inventory/hosts"):
+        os.remove("./inventory/hosts")
 
     ansible_runner.run(
         private_data_dir='./',
