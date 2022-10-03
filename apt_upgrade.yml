@@ -1,6 +1,7 @@
 ---
 
-- hosts: 'all'
+- hosts: all
+  user: root
   serial: 1
   tasks:
    - name: apt update
