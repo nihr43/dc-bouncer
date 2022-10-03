@@ -19,3 +19,5 @@
 
    - name: apt autoremove --purge
      raw: apt autoremove --purge -y
+     register: autoremove_result
+     changed_when: "'0 to remove' not in autoremove_result.stdout"
