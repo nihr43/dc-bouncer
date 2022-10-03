@@ -36,7 +36,7 @@ def ceph_ok(client, logging) -> bool:
     resource = api.get_namespaced_custom_object(
         group="ceph.rook.io",
         version="v1",
-        name="rook-ceph", # or cephcluster?
+        name="rook-ceph",
         namespace="rook-ceph",
         plural="cephclusters",
     )
