@@ -50,15 +50,32 @@ def ceph_ok(client, logging) -> bool:
         return False
 
 
-def upgrade_node(ansible_runner, host):
+def upgrade_node(ansible_runner, host, os):
     '''
     upgrade and reboot a given node
     '''
+    # ansible-runner apppears to leave behind a non-writable artifact:
+    os.remove("./inventory/hosts")
+
     ansible_runner.run(
         private_data_dir='./',
         inventory = host,
         playbook = 'apt_upgrade.yml'
     )
+
+
+def wait_until(fn):
+    '''
+    given a function, attempt a number of retries
+    '''
+    count = 100
+    for i in range(count):
+        if fn() == True:
+            break
+        if i == count:
+            logging.info('timed out waiting for ' + fn().__name__)
+            exit(1)
+        time.sleep(10)
 
 
 if __name__ == '__main__':
@@ -68,6 +85,7 @@ if __name__ == '__main__':
 
         import logging
         import os
+        from functools import partial
 
         hosts = ['10.0.200.1','10.0.200.3','10.0.254.253']
 
@@ -76,23 +94,16 @@ if __name__ == '__main__':
 
         notready = []
 
-        if k8s_ok(client, logging) == False:
-            notready.append('k8s')
-        if ceph_ok(client, logging) == False:
-            notready.append('ceph')
-        if len(notready) != 0:
-            exit()
+        k8s_ok_partial = partial(k8s_ok, client, logging)
+        ceph_ok_partial = partial(ceph_ok, client, logging)
+
+        wait_until(partial_k8s_ok)
+        wait_until(partial_ceph_ok)
 
         for n in hosts:
-            upgrade_node(ansible_runner, n)
-            os.remove("./inventory/hosts")
-            for i in range(20): # wait up to 10 minutes
-                time.sleep(30)
-                if k8s_ok(client, logging) == False:
-                    notready.append('k8s')
-                if ceph_ok(client, logging) == False:
-                    notready.append('ceph')
-                if len(notready) == 0:
-                    break
+            upgrade_node(ansible_runner, n, os)
+            time.sleep(30) # health doesnt necessarily take immediate effect
+            wait_until(k8s_ok_partial)
+            wait_until(ceph_ok_partial)
 
     privileged_main()
