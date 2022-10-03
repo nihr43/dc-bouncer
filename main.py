@@ -3,6 +3,24 @@
 import time
 
 
+def get_nodes(client, logging) -> list:
+    '''
+    get list of strings of node ips
+    '''
+
+    api = client.CoreV1Api()
+    node_list = api.list_node()
+    ip_list = []
+
+    for node in node_list.items:
+        for i in node.status.addresses:
+            if i.type == 'InternalIP':
+                ip_list.append(i.address)
+                logging.info('found k8s node ' + node.metadata.name + ' at ' + i.address)
+
+    return ip_list
+
+
 def k8s_ok(client, logging) -> bool:
     '''
     check readiness of each kubernetes node
@@ -89,11 +107,10 @@ if __name__ == '__main__':
         import os
         from functools import partial
 
-        hosts = ['10.0.200.1', '10.0.200.3', '10.0.254.253']
-
         logging.basicConfig(level=logging.INFO)
         config.load_kube_config()
 
+        hosts = get_nodes(client, logging)
         k8s_ok_partial = partial(k8s_ok, client, logging)
         ceph_ok_partial = partial(ceph_ok, client, logging)
 
