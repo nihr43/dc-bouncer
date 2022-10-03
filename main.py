@@ -14,11 +14,11 @@ def k8s_ok(client, logging) -> bool:
 
     for node in node_list.items:
         for i in node.status.conditions:
-            if i.type == 'Ready':        # these dont appear to be more easily addresable # noqa
+            if i.type == 'Ready':        # these dont appear to be more easily addressable # noqa
                 node_status = i.status
                 if node_status != 'True':
                     not_ready.append(node.metadata.name)
-        logging.info(node.metadata.name + ' Ready is ' + node_status)
+        logging.info(node.metadata.name + ' ready state is ' + node_status)
 
     if len(not_ready) == 0:
         return True
