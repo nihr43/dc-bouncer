@@ -1,12 +1,8 @@
 #!/usr/bin/python3
 
-import ansible.runner
-import ansible.playbook
-import ansible.inventory
-from ansible import callbacks
-from ansible import utils
 import json
-
+import time
+import os
 
 def k8s_ok(client, logging) -> bool:
     '''
@@ -55,45 +51,48 @@ def ceph_ok(client, logging) -> bool:
         return False
 
 
-def upgrade_node(inventory):
+def upgrade_node(ansible_runner, host):
     '''
     upgrade and reboot a given node
     '''
-    run = ansible.runner.Runner(
-        module_name = 'apt_upgrade.yml',
-        timeout = 5,
-        inventory = inventory,
-        subset = 'all'
+    ansible_runner.run(
+        private_data_dir='./',
+        inventory = host,
+        playbook = 'apt_upgrade.yml'
     )
-
-    out = pm.run()
-    print(json.dumps(out, sort_keys=True, indent=4, separators=(',', ': ')))
 
 
 if __name__ == '__main__':
     def privileged_main():
         from kubernetes import client, config, watch
+        import ansible_runner
+
         import logging
 
-        '''
-        we expect some HA cluster-wide endpoint to exist, in order to continue to
-        use the k8s api while waiting for a node to reboot
-        '''
-        k8s_endpoint = ''
-        hosts = []
+        hosts = ['10.0.200.1','10.0.200.3','10.0.254.253']
 
         logging.basicConfig(level=logging.INFO)
         config.load_kube_config()
 
-        k8s_ok(client, logging)
-        ceph_ok(client, logging)
+        notready = []
+
+        if k8s_ok(client, logging) == False:
+            notready.append('k8s')
+        if ceph_ok(client, logging) == False:
+            notready.append('ceph')
+        if len(notready) != 0:
+            exit()
 
         for n in hosts:
-            ephemeral_inventory = ansible.inventory.Inventory(hosts)
-            upgrade_node(ephemeral_inventory)
-            # wait_until:
-            k8s_ok(k8s_v1)
-            # wait_until:
-            ceph_ok(k8s_v1)
+            upgrade_node(ansible_runner, n)
+            os.remove("./inventory/hosts")
+            for i in range(20): # wait up to 10 minutes
+                time.sleep(30)
+                if k8s_ok(client, logging) == False:
+                    notready.append('k8s')
+                if ceph_ok(client, logging) == False:
+                    notready.append('ceph')
+                if len(notready) == 0:
+                    break
 
     privileged_main()
