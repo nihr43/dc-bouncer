@@ -102,8 +102,7 @@ if __name__ == '__main__':
 
         for n in hosts:
             upgrade_node(ansible_runner, n, os)
-            time.sleep(30)  # health doesnt necessarily take immediate effect
-            wait_until(k8s_ok_partial)
-            wait_until(ceph_ok_partial)
+            wait_until(k8s_ok_partial, logging)
+            wait_until(ceph_ok_partial, logging)
 
     privileged_main()
