@@ -15,13 +15,20 @@ def k8s_ok(client, logging) -> bool:
     api = client.CoreV1Api()
     node_list = api.list_node()
 
-    for node in node_list.items:
-        print("%s\t%s" % (node.metadata.name, node.metadata.labels))
+    not_ready = []
 
-    if any node.metadata.readiness = false: # this is phony
-        return false
+    for node in node_list.items:
+        for i in node.status.conditions:
+            if i.type == 'Ready':        # these dont appear to be more easily addresable
+                node_status = i.status
+                if node_status != 'True':
+                    not_ready.append(node.metadata.name)
+        logging.info(node.metadata.name + ' Ready is ' + node_status)
+
+    if len(not_ready) == 0:
+        return True
     else:
-        return true
+        return False
 
 
 def ceph_ok(client, logging) -> bool:
