@@ -13,3 +13,143 @@ This is done using the [ansible_runner](https://ansible-runner.readthedocs.io/en
 Since ceph is deployed on kubernetes using rook, its own basic health is available within the kubernetes api under the CephCluster crd.
 
 It is expected that `~/.kube/config` is configured, and that some high-availability mechanism exists for the kubernetes api endpoint itself, as we will have rebooted the entire control plane when finished.
+
+## example
+
+```
+~/git/dc-bouncer$ ./main.py 
+INFO:root:found k8s node x470d4u-zen-420c2 at 10.0.200.1
+INFO:root:found k8s node x470d4u-zen-9679c at 10.0.200.3
+INFO:root:found k8s node x7spahf-atom-6aef0 at 10.0.254.253
+INFO:root:x470d4u-zen-420c2 ready state is True
+INFO:root:x470d4u-zen-9679c ready state is True
+INFO:root:x7spahf-atom-6aef0 ready state is True
+INFO:root:ceph state is HEALTH_OK
+
+PLAY [all] *********************************************************************
+
+TASK [Gathering Facts] *********************************************************
+core/2.13/reference_appendices/interpreter_discovery.html for more information.
+ok: [10.0.200.1]
+
+TASK [apt update] **************************************************************
+ok: [10.0.200.1]
+
+TASK [apt upgrade] *************************************************************
+changed: [10.0.200.1]
+
+TASK [reboot] ******************************************************************
+changed: [10.0.200.1]
+
+TASK [apt autoremove --purge] **************************************************
+ok: [10.0.200.1]
+
+PLAY RECAP *********************************************************************
+10.0.200.1                 : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+INFO:root:x470d4u-zen-9679c ready state is True
+INFO:root:x7spahf-atom-6aef0 ready state is True
+INFO:root:x470d4u-zen-420c2 ready state is True
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_OK
+
+PLAY [all] *********************************************************************
+
+TASK [Gathering Facts] *********************************************************
+[WARNING]: Platform linux on host 10.0.200.3 is using the discovered Python
+interpreter at /usr/bin/python3.10, but future installation of another Python
+interpreter could change the meaning of that path. See
+https://docs.ansible.com/ansible-
+core/2.13/reference_appendices/interpreter_discovery.html for more information.
+ok: [10.0.200.3]
+
+TASK [apt update] **************************************************************
+ok: [10.0.200.3]
+
+TASK [apt upgrade] *************************************************************
+changed: [10.0.200.3]
+
+TASK [reboot] ******************************************************************
+changed: [10.0.200.3]
+
+TASK [apt autoremove --purge] **************************************************
+ok: [10.0.200.3]
+
+PLAY RECAP *********************************************************************
+10.0.200.3                 : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+INFO:root:x470d4u-zen-9679c ready state is Unknown
+INFO:root:x7spahf-atom-6aef0 ready state is True
+INFO:root:x470d4u-zen-420c2 ready state is True
+INFO:root:waiting
+INFO:root:x7spahf-atom-6aef0 ready state is True
+INFO:root:x470d4u-zen-420c2 ready state is True
+INFO:root:x470d4u-zen-9679c ready state is False
+INFO:root:waiting
+INFO:root:x7spahf-atom-6aef0 ready state is True
+INFO:root:x470d4u-zen-420c2 ready state is True
+INFO:root:x470d4u-zen-9679c ready state is True
+INFO:root:ceph state is HEALTH_OK
+
+PLAY [all] *********************************************************************
+
+TASK [Gathering Facts] *********************************************************
+core/2.13/reference_appendices/interpreter_discovery.html for more information.
+ok: [10.0.254.253]
+
+TASK [apt update] **************************************************************
+ok: [10.0.254.253]
+
+TASK [apt upgrade] *************************************************************
+changed: [10.0.254.253]
+
+TASK [reboot] ******************************************************************
+changed: [10.0.254.253]
+
+TASK [apt autoremove --purge] **************************************************
+ok: [10.0.254.253]
+
+PLAY RECAP *********************************************************************
+10.0.254.253               : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+INFO:root:x470d4u-zen-9679c ready state is True
+INFO:root:x470d4u-zen-420c2 ready state is True
+INFO:root:x7spahf-atom-6aef0 ready state is Unknown
+INFO:root:waiting
+INFO:root:x470d4u-zen-420c2 ready state is True
+INFO:root:x7spahf-atom-6aef0 ready state is Unknown
+INFO:root:x470d4u-zen-9679c ready state is True
+INFO:root:waiting
+INFO:root:x470d4u-zen-420c2 ready state is True
+INFO:root:x470d4u-zen-9679c ready state is True
+INFO:root:x7spahf-atom-6aef0 ready state is False
+INFO:root:waiting
+INFO:root:x470d4u-zen-420c2 ready state is True
+INFO:root:x470d4u-zen-9679c ready state is True
+INFO:root:x7spahf-atom-6aef0 ready state is True
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_WARN
+INFO:root:waiting
+INFO:root:ceph state is HEALTH_OK
+```
