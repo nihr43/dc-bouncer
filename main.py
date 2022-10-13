@@ -91,7 +91,7 @@ def wait_until(fn, logging):
     for i in range(count):
         if fn():
             break
-        if i == count:
+        if i == count-1:
             logging.info('timed out waiting')
             exit(1)
         logging.info('waiting')
