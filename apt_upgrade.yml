@@ -9,7 +9,7 @@
      changed_when: false
 
    - name: apt upgrade
-     raw: DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y
+     raw: DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade -y
      register: upgrade_result
      changed_when: "'packages will be upgraded' in upgrade_result.stdout"
 
