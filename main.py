@@ -16,7 +16,8 @@ def get_nodes(client, logging) -> list:
         for i in node.status.addresses:
             if i.type == 'InternalIP':
                 ip_list.append(i.address)
-                logging.info('found k8s node ' + node.metadata.name + ' at ' + i.address)
+                logging.info('found k8s node {} at {}'
+                             .format(node.metadata.name, i.address))
 
     return ip_list
 
