@@ -1,23 +1,24 @@
 ---
 
-- hosts: all
+- name: Upgrade
+  hosts: all
   user: root
   serial: 1
   tasks:
    - name: apt update
-     raw: apt update
+     ansible.builtin.raw: apt update
      changed_when: false
 
    - name: apt upgrade
-     raw: DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade -y
+     ansible.builtin.raw: DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade -y
      register: upgrade_result
      changed_when: "'packages will be upgraded' in upgrade_result.stdout"
 
    - name: reboot
-     reboot:
+     ansible.builtin.reboot:
      when: upgrade_result.changed
 
    - name: apt autoremove --purge
-     raw: apt autoremove --purge -y
+     ansible.builtin.raw: apt autoremove --purge -y
      register: autoremove_result
      changed_when: "'0 to remove' not in autoremove_result.stdout"
