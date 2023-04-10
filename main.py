@@ -84,6 +84,21 @@ def upgrade_node(ansible_runner, host, os):
     )
 
 
+def reboot_node(ansible_runner, host, os):
+    '''
+    reboot a given node
+    '''
+    # ansible-runner apppears to leave behind a non-writable artifact:
+    if os.path.isfile("./inventory/hosts"):
+        os.remove("./inventory/hosts")
+
+    ansible_runner.run(
+        private_data_dir='./',
+        inventory=host,
+        playbook='reboot.yml'
+    )
+
+
 def wait_until(fn, logging):
     '''
     given a function, attempt a number of retries
@@ -103,6 +118,7 @@ if __name__ == '__main__':
     def privileged_main():
         from kubernetes import client, config
         import ansible_runner
+        import argparse
 
         import logging
         import os
@@ -110,6 +126,10 @@ if __name__ == '__main__':
 
         logging.basicConfig(level=logging.INFO)
         config.load_kube_config()
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--reboot', action='store_true')
+        args = parser.parse_args()
 
         hosts = get_nodes(client, logging)
         k8s_ok_partial = partial(k8s_ok, client, logging)
@@ -119,7 +139,10 @@ if __name__ == '__main__':
         wait_until(ceph_ok_partial, logging)
 
         for n in hosts:
-            upgrade_node(ansible_runner, n, os)
+            if args.reboot:
+                reboot_node(ansible_runner, n, os)
+            else:
+                upgrade_node(ansible_runner, n, os)
             wait_until(k8s_ok_partial, logging)
             wait_until(ceph_ok_partial, logging)
 
