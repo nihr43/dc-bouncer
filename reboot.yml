@@ -1,0 +1,8 @@
+---
+
+- name: reboot
+  hosts: all
+  user: root
+  tasks:
+   - name: reboot
+     ansible.builtin.reboot:
