@@ -77,11 +77,14 @@ def upgrade_node(ansible_runner, host, os):
     if os.path.isfile("./inventory/hosts"):
         os.remove("./inventory/hosts")
 
-    ansible_runner.run(
-        private_data_dir='./',
-        inventory=host,
-        playbook='apt_upgrade.yml'
-    )
+    runner = ansible_runner.run(
+                 private_data_dir='./',
+                 inventory=host,
+                 playbook='apt_upgrade.yml')
+
+    print(runner.status)
+    if runner.status != 'successful':
+        exit(1)
 
 
 def reboot_node(ansible_runner, host, os):
