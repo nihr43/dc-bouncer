@@ -4,9 +4,9 @@ import time
 
 
 def get_nodes(client, logging) -> list:
-    '''
+    """
     get list of strings of node ips
-    '''
+    """
 
     api = client.CoreV1Api()
     node_list = api.list_node()
@@ -14,18 +14,19 @@ def get_nodes(client, logging) -> list:
 
     for node in node_list.items:
         for i in node.status.addresses:
-            if i.type == 'InternalIP':
+            if i.type == "InternalIP":
                 ip_list.append(i.address)
-                logging.info('found k8s node {} at {}'
-                             .format(node.metadata.name, i.address))
+                logging.info(
+                    "found k8s node {} at {}".format(node.metadata.name, i.address)
+                )
 
     return ip_list
 
 
 def k8s_ok(client, logging) -> bool:
-    '''
+    """
     check readiness of each kubernetes node
-    '''
+    """
     api = client.CoreV1Api()
     node_list = api.list_node()
 
@@ -33,11 +34,13 @@ def k8s_ok(client, logging) -> bool:
 
     for node in node_list.items:
         for i in node.status.conditions:
-            if i.type == 'Ready':        # these dont appear to be more easily addressable # noqa
+            if (
+                i.type == "Ready"
+            ):  # these dont appear to be more easily addressable # noqa
                 node_status = i.status
-                if node_status != 'True':
+                if node_status != "True":
                     not_ready.append(node.metadata.name)
-        logging.info(node.metadata.name + ' ready state is ' + node_status)
+        logging.info(node.metadata.name + " ready state is " + node_status)
 
     if len(not_ready) == 0:
         return True
@@ -46,9 +49,9 @@ def k8s_ok(client, logging) -> bool:
 
 
 def ceph_ok(client, logging) -> bool:
-    '''
+    """
     check readiness of cephcluster crd in kubernetes
-    '''
+    """
     api = client.CustomObjectsApi()
 
     # CephCluster crd defined at https://github.com/rook/rook/blob/master/deploy/examples/crds.yaml line 841 # noqa
@@ -60,8 +63,8 @@ def ceph_ok(client, logging) -> bool:
         plural="cephclusters",
     )
 
-    health = resource.get('status').get('ceph').get('health')
-    logging.info('ceph state is ' + health)
+    health = resource.get("status").get("ceph").get("health")
+    logging.info("ceph state is " + health)
 
     if health == "HEALTH_OK":
         return True
@@ -81,27 +84,27 @@ def run_playbook(ansible_runner, host, os, playbook):
         private_data_dir="./", inventory=host, playbook=playbook
     )
 
-    print(runner.status)
-    if runner.status != 'successful':
+    if runner.status != "successful":
         exit(1)
 
 
 def wait_until(fn, logging):
-    '''
-    given a function, attempt a number of retries
-    '''
+    """
+    given a function that returns True or False, attempt a number of retries
+    """
     count = 100
     for i in range(count):
         if fn():
             break
-        if i == count-1:
-            logging.info('timed out waiting')
+        if i == count - 1:
+            logging.info("timed out waiting")
             exit(1)
-        logging.info('waiting')
+        logging.info("waiting")
         time.sleep(10)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+
     def privileged_main():
         from kubernetes import client, config
         import ansible_runner
@@ -115,7 +118,7 @@ if __name__ == '__main__':
         config.load_kube_config()
 
         parser = argparse.ArgumentParser()
-        parser.add_argument('--reboot', action='store_true')
+        parser.add_argument("--reboot", action="store_true")
         args = parser.parse_args()
 
         hosts = get_nodes(client, logging)
