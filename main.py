@@ -69,37 +69,21 @@ def ceph_ok(client, logging) -> bool:
         return False
 
 
-def upgrade_node(ansible_runner, host, os):
-    '''
-    upgrade and reboot a given node
-    '''
+def run_playbook(ansible_runner, host, os, playbook):
+    """
+    run a given playbook
+    """
     # ansible-runner apppears to leave behind a non-writable artifact:
     if os.path.isfile("./inventory/hosts"):
         os.remove("./inventory/hosts")
 
     runner = ansible_runner.run(
-                 private_data_dir='./',
-                 inventory=host,
-                 playbook='apt_upgrade.yml')
+        private_data_dir="./", inventory=host, playbook=playbook
+    )
 
     print(runner.status)
     if runner.status != 'successful':
         exit(1)
-
-
-def reboot_node(ansible_runner, host, os):
-    '''
-    reboot a given node
-    '''
-    # ansible-runner apppears to leave behind a non-writable artifact:
-    if os.path.isfile("./inventory/hosts"):
-        os.remove("./inventory/hosts")
-
-    ansible_runner.run(
-        private_data_dir='./',
-        inventory=host,
-        playbook='reboot.yml'
-    )
 
 
 def wait_until(fn, logging):
@@ -143,9 +127,9 @@ if __name__ == '__main__':
 
         for n in hosts:
             if args.reboot:
-                reboot_node(ansible_runner, n, os)
+                run_playbook(ansible_runner, n, os, "reboot.yml")
             else:
-                upgrade_node(ansible_runner, n, os)
+                run_playbook(ansible_runner, n, os, "apt_upgrade.yml")
             wait_until(k8s_ok_partial, logging)
             wait_until(ceph_ok_partial, logging)
 
