@@ -142,6 +142,7 @@ if __name__ == "__main__":
             wait_until(k8s_ok_partial, logging)
             wait_until(ceph_ok_partial, logging)
 
+        logging.info("---------- continuing to miscellaneous hosts ----------")
         for n in get_snowflakes("hosts.list", logging):
             if args.reboot:
                 run_playbook(ansible_runner, n, os, "reboot.yml")
