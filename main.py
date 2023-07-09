@@ -103,6 +103,12 @@ def wait_until(fn, logging):
         time.sleep(10)
 
 
+def get_snowflakes(path, logging):
+    with open(path, 'r') as file:
+        lines = [line.strip() for line in file]
+    return lines
+
+
 if __name__ == "__main__":
 
     def privileged_main():
@@ -135,5 +141,11 @@ if __name__ == "__main__":
                 run_playbook(ansible_runner, n, os, "apt_upgrade.yml")
             wait_until(k8s_ok_partial, logging)
             wait_until(ceph_ok_partial, logging)
+
+        for n in get_snowflakes('hosts.list', logging):
+            if args.reboot:
+                run_playbook(ansible_runner, n, os, "reboot.yml")
+            else:
+                run_playbook(ansible_runner, n, os, "apt_upgrade.yml")
 
     privileged_main()
