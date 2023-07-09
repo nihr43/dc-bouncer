@@ -104,7 +104,7 @@ def wait_until(fn, logging):
 
 
 def get_snowflakes(path, logging):
-    with open(path, 'r') as file:
+    with open(path, "r") as file:
         lines = [line.strip() for line in file]
     return lines
 
@@ -142,7 +142,7 @@ if __name__ == "__main__":
             wait_until(k8s_ok_partial, logging)
             wait_until(ceph_ok_partial, logging)
 
-        for n in get_snowflakes('hosts.list', logging):
+        for n in get_snowflakes("hosts.list", logging):
             if args.reboot:
                 run_playbook(ansible_runner, n, os, "reboot.yml")
             else:
