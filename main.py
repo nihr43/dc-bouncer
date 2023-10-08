@@ -1,6 +1,13 @@
 #!/usr/bin/python3
 
 import time
+import logging
+import os
+import argparse
+
+import ansible_runner
+from kubernetes import client, config
+from functools import partial
 
 
 def get_nodes(client, logging) -> list:
@@ -76,7 +83,7 @@ def ceph_ok(client, logging) -> bool:
         return False
 
 
-def run_playbook(ansible_runner, host, os, playbook):
+def run_playbook(host, playbook):
     """
     run a given playbook
     """
@@ -89,7 +96,7 @@ def run_playbook(ansible_runner, host, os, playbook):
     )
 
     if runner.status != "successful":
-        exit(1)
+        raise RuntimeError("playbook {} failed on {}".format(playbook, host))
 
 
 def wait_until(fn, logging):
@@ -101,8 +108,7 @@ def wait_until(fn, logging):
         if fn():
             break
         if i == count - 1:
-            logging.info("timed out waiting")
-            exit(1)
+            raise RuntimeError("timed out waiting")
         logging.info("waiting")
         time.sleep(10)
 
@@ -114,43 +120,33 @@ def get_snowflakes(path, logging):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    config.load_kube_config()
 
-    def privileged_main():
-        from kubernetes import client, config
-        import ansible_runner
-        import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--reboot", action="store_true", help="Reboot only without upgrade"
+    )
+    args = parser.parse_args()
 
-        import logging
-        import os
-        from functools import partial
+    hosts = get_nodes(client, logging)
+    k8s_ok_partial = partial(k8s_ok, client, logging)
+    ceph_ok_partial = partial(ceph_ok, client, logging)
 
-        logging.basicConfig(level=logging.INFO)
-        config.load_kube_config()
+    wait_until(k8s_ok_partial, logging)
+    wait_until(ceph_ok_partial, logging)
 
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--reboot", action="store_true")
-        args = parser.parse_args()
-
-        hosts = get_nodes(client, logging)
-        k8s_ok_partial = partial(k8s_ok, client, logging)
-        ceph_ok_partial = partial(ceph_ok, client, logging)
-
+    for n in hosts:
+        if args.reboot:
+            run_playbook(n, "reboot.yml")
+        else:
+            run_playbook(n, "apt_upgrade.yml")
         wait_until(k8s_ok_partial, logging)
         wait_until(ceph_ok_partial, logging)
 
-        for n in hosts:
-            if args.reboot:
-                run_playbook(ansible_runner, n, os, "reboot.yml")
-            else:
-                run_playbook(ansible_runner, n, os, "apt_upgrade.yml")
-            wait_until(k8s_ok_partial, logging)
-            wait_until(ceph_ok_partial, logging)
-
-        logging.info("---------- continuing to miscellaneous hosts ----------")
-        for n in get_snowflakes("misc_hosts", logging):
-            if args.reboot:
-                run_playbook(ansible_runner, n, os, "reboot.yml")
-            else:
-                run_playbook(ansible_runner, n, os, "apt_upgrade.yml")
-
-    privileged_main()
+    logging.info("---------- continuing to miscellaneous hosts ----------")
+    for n in get_snowflakes("misc_hosts", logging):
+        if args.reboot:
+            run_playbook(n, "reboot.yml")
+        else:
+            run_playbook(n, "apt_upgrade.yml")
