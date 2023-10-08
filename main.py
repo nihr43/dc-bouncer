@@ -28,19 +28,23 @@ def k8s_ok(client, logging) -> bool:
     check readiness of each kubernetes node
     """
     api = client.CoreV1Api()
-    node_list = api.list_node()
 
-    not_ready = []
+    try:
+        node_list = api.list_node()
+        not_ready = []
 
-    for node in node_list.items:
-        for i in node.status.conditions:
-            if (
-                i.type == "Ready"
-            ):  # these dont appear to be more easily addressable # noqa
-                node_status = i.status
-                if node_status != "True":
-                    not_ready.append(node.metadata.name)
-        logging.info(node.metadata.name + " ready state is " + node_status)
+        for node in node_list.items:
+            for i in node.status.conditions:
+                if (
+                    i.type == "Ready"
+                ):  # these dont appear to be more easily addressable # noqa
+                    node_status = i.status
+                    if node_status != "True":
+                        not_ready.append(node.metadata.name)
+            logging.info(node.metadata.name + " ready state is " + node_status)
+
+    except ConnectionRefusedError:
+        pass
 
     if len(not_ready) == 0:
         return True
@@ -143,7 +147,7 @@ if __name__ == "__main__":
             wait_until(ceph_ok_partial, logging)
 
         logging.info("---------- continuing to miscellaneous hosts ----------")
-        for n in get_snowflakes("hosts.list", logging):
+        for n in get_snowflakes("misc_hosts", logging):
             if args.reboot:
                 run_playbook(ansible_runner, n, os, "reboot.yml")
             else:
