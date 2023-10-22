@@ -99,18 +99,24 @@ def run_playbook(host, playbook):
         raise RuntimeError("playbook {} failed on {}".format(playbook, host))
 
 
-def wait_until(fn, logging):
+def wait_until(fn, retry, success, logging):
     """
-    given a function that returns True or False, attempt a number of retries
+    Given a function that returns True or False, attempt (retry) iterations for (success) successes.
+    This is needed because ceph will not always immediately report unhealthy when a node is pulled.
+    Example: wait_until(fn, 100, 3, logging) will require 3 successes within 100 retries.
     """
-    count = 100
-    for i in range(count):
-        if fn():
-            break
-        if i == count - 1:
-            raise RuntimeError("timed out waiting")
-        logging.info("waiting")
-        time.sleep(10)
+    retry -= 1
+    if retry == 0:
+        raise TimeoutError("timed out waiting")
+
+    time.sleep(5)
+
+    if fn():
+        success -= 1
+    if success != 0:
+        wait_until(fn, retry, success, logging)
+
+    return
 
 
 def get_snowflakes(path, logging):
@@ -133,16 +139,16 @@ if __name__ == "__main__":
     k8s_ok_partial = partial(k8s_ok, client, logging)
     ceph_ok_partial = partial(ceph_ok, client, logging)
 
-    wait_until(k8s_ok_partial, logging)
-    wait_until(ceph_ok_partial, logging)
+    wait_until(k8s_ok_partial, 120, 2, logging)
+    wait_until(ceph_ok_partial, 120, 3, logging)
 
     for n in hosts:
         if args.reboot:
             run_playbook(n, "reboot.yml")
         else:
             run_playbook(n, "apt_upgrade.yml")
-        wait_until(k8s_ok_partial, logging)
-        wait_until(ceph_ok_partial, logging)
+        wait_until(k8s_ok_partial, 120, 2, logging)
+        wait_until(ceph_ok_partial, 120, 3, logging)
 
     logging.info("---------- continuing to miscellaneous hosts ----------")
     for n in get_snowflakes("misc_hosts", logging):
