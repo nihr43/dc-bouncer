@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import time
-import logging
 import os
 import argparse
 
@@ -10,7 +9,7 @@ from kubernetes import client, config
 from functools import partial
 
 
-def get_nodes(client, logging) -> list:
+def get_nodes(client) -> list:
     """
     get list of strings of node ips
     """
@@ -23,14 +22,12 @@ def get_nodes(client, logging) -> list:
         for i in node.status.addresses:
             if i.type == "InternalIP":
                 ip_list.append(i.address)
-                logging.info(
-                    "found k8s node {} at {}".format(node.metadata.name, i.address)
-                )
+                print("found k8s node {} at {}".format(node.metadata.name, i.address))
 
     return ip_list
 
 
-def k8s_ok(client, logging) -> bool:
+def k8s_ok(client) -> bool:
     """
     check readiness of each kubernetes node
     """
@@ -48,7 +45,7 @@ def k8s_ok(client, logging) -> bool:
                     node_status = i.status
                     if node_status != "True":
                         not_ready.append(node.metadata.name)
-            logging.info(node.metadata.name + " ready state is " + node_status)
+            print(node.metadata.name + " ready state is " + node_status)
 
     except ConnectionRefusedError:
         pass
@@ -59,7 +56,7 @@ def k8s_ok(client, logging) -> bool:
         return False
 
 
-def ceph_ok(client, logging) -> bool:
+def ceph_ok(client) -> bool:
     """
     check readiness of cephcluster crd in kubernetes
     """
@@ -75,7 +72,7 @@ def ceph_ok(client, logging) -> bool:
     )
 
     health = resource.get("status").get("ceph").get("health")
-    logging.info("ceph state is " + health)
+    print("ceph state is " + health)
 
     if health == "HEALTH_OK":
         return True
@@ -99,11 +96,11 @@ def run_playbook(host, playbook):
         raise RuntimeError("playbook {} failed on {}".format(playbook, host))
 
 
-def wait_until(fn, retry, success, logging):
+def wait_until(fn, retry, success):
     """
     Given a function that returns True or False, attempt (retry) iterations for (success) successes.
     This is needed because ceph will not always immediately report unhealthy when a node is pulled.
-    Example: wait_until(fn, 100, 3, logging) will require 3 successes within 100 retries.
+    Example: wait_until(fn, 100, 3) will require 3 successes within 100 retries.
     """
     retry -= 1
     if retry == 0:
@@ -114,19 +111,18 @@ def wait_until(fn, retry, success, logging):
     if fn():
         success -= 1
     if success != 0:
-        wait_until(fn, retry, success, logging)
+        wait_until(fn, retry, success)
 
     return
 
 
-def get_snowflakes(path, logging):
+def get_snowflakes(path):
     with open(path, "r") as file:
         lines = [line.strip() for line in file]
     return lines
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     config.load_kube_config()
 
     parser = argparse.ArgumentParser()
@@ -135,23 +131,23 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    hosts = get_nodes(client, logging)
-    k8s_ok_partial = partial(k8s_ok, client, logging)
-    ceph_ok_partial = partial(ceph_ok, client, logging)
+    hosts = get_nodes(client)
+    k8s_ok_partial = partial(k8s_ok, client)
+    ceph_ok_partial = partial(ceph_ok, client)
 
-    wait_until(k8s_ok_partial, 120, 2, logging)
-    wait_until(ceph_ok_partial, 120, 3, logging)
+    wait_until(k8s_ok_partial, 120, 2)
+    wait_until(ceph_ok_partial, 120, 3)
 
     for n in hosts:
         if args.reboot:
             run_playbook(n, "reboot.yml")
         else:
             run_playbook(n, "apt_upgrade.yml")
-        wait_until(k8s_ok_partial, 120, 2, logging)
-        wait_until(ceph_ok_partial, 120, 3, logging)
+        wait_until(k8s_ok_partial, 120, 2)
+        wait_until(ceph_ok_partial, 120, 3)
 
-    logging.info("---------- continuing to miscellaneous hosts ----------")
-    for n in get_snowflakes("misc_hosts", logging):
+    print("---------- continuing to miscellaneous hosts ----------")
+    for n in get_snowflakes("misc_hosts"):
         if args.reboot:
             run_playbook(n, "reboot.yml")
         else:
