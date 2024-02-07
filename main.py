@@ -2,8 +2,8 @@ import time
 import os
 import argparse
 
-import ansible_runner
-from kubernetes import client, config
+import ansible_runner  # type: ignore
+from kubernetes import client, config  # type: ignore
 from functools import partial
 
 
@@ -78,7 +78,7 @@ def ceph_ok(client) -> bool:
         return False
 
 
-def run_playbook(host, playbook):
+def run_playbook(host: str, playbook: str) -> None:
     """
     run a given playbook
     """
@@ -94,7 +94,7 @@ def run_playbook(host, playbook):
         raise RuntimeError("playbook {} failed on {}".format(playbook, host))
 
 
-def wait_until(fn, retry, success):
+def wait_until(fn: partial[bool], retry: int, success: int) -> None:
     """
     Given a function that returns True or False, attempt (retry) iterations for (success) successes.
     This is needed because ceph will not always immediately report unhealthy when a node is pulled.
