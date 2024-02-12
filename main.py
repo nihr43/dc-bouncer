@@ -6,6 +6,7 @@ from typing import Dict, List
 
 import ansible_runner  # type: ignore
 from kubernetes import client, config  # type: ignore
+from kubernetes.client.rest import ApiException  # type: ignore
 from functools import partial
 
 
@@ -122,6 +123,24 @@ def get_config(path: str) -> Dict[str, List[str]]:
     return yam
 
 
+def deployments_ok(cfg) -> bool:
+    apps_v1 = client.AppsV1Api()
+
+    for d in cfg.get("require_healthy"):
+        try:
+            deployment = apps_v1.read_namespaced_deployment(d, "default")
+        except ApiException as e:
+            if e.status == 404:
+                raise ValueError(f"deployment not found with name {d}")
+        try:
+            assert deployment.status.unavailable_replicas is None
+        except AssertionError:
+            print(f"{d} has unavailable replicas")
+            return False
+
+    return True
+
+
 if __name__ == "__main__":
     config.load_kube_config()
     cfg = get_config("config.yml")
@@ -144,9 +163,11 @@ if __name__ == "__main__":
 
     k8s_ok_partial = partial(k8s_ok)
     ceph_ok_partial = partial(ceph_ok)
+    deployments_ok_partial = partial(deployments_ok, cfg)
 
     wait_until(k8s_ok_partial, 120, 2)
     wait_until(ceph_ok_partial, 120, 3)
+    wait_until(deployments_ok_partial, 120, 2)
 
     for n in hosts:
         if args.reboot:
@@ -155,3 +176,4 @@ if __name__ == "__main__":
             run_playbook(n, "apt_upgrade.yml")
         wait_until(k8s_ok_partial, 120, 2)
         wait_until(ceph_ok_partial, 120, 3)
+        wait_until(deployments_ok_partial, 120, 2)
