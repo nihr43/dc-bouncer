@@ -9,7 +9,7 @@ from kubernetes import client, config  # type: ignore
 from functools import partial
 
 
-def get_nodes(client) -> list:
+def get_nodes() -> list:
     """
     get list of strings of node ips
     """
@@ -27,7 +27,7 @@ def get_nodes(client) -> list:
     return ip_list
 
 
-def k8s_ok(client) -> bool:
+def k8s_ok() -> bool:
     """
     check readiness of each kubernetes node
     """
@@ -56,7 +56,7 @@ def k8s_ok(client) -> bool:
         return False
 
 
-def ceph_ok(client) -> bool:
+def ceph_ok() -> bool:
     """
     check readiness of cephcluster crd in kubernetes
     """
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    k8s_hosts = get_nodes(client)
+    k8s_hosts = get_nodes()
     extra_hosts = cfg.get("extra_hosts")
 
     if extra_hosts is not None:
@@ -142,8 +142,8 @@ if __name__ == "__main__":
     else:
         hosts = k8s_hosts
 
-    k8s_ok_partial = partial(k8s_ok, client)
-    ceph_ok_partial = partial(ceph_ok, client)
+    k8s_ok_partial = partial(k8s_ok)
+    ceph_ok_partial = partial(ceph_ok)
 
     wait_until(k8s_ok_partial, 120, 2)
     wait_until(ceph_ok_partial, 120, 3)
