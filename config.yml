@@ -1,0 +1,10 @@
+---
+extra_hosts:
+ - 10.0.0.10
+ - 10.0.0.11
+
+require_heathly:
+ - hugo
+ - l3lb
+ - influxdb-prod
+ - registry

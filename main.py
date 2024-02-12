@@ -1,6 +1,8 @@
 import time
 import os
 import argparse
+import yaml
+from typing import Dict, List
 
 import ansible_runner  # type: ignore
 from kubernetes import client, config  # type: ignore
@@ -114,14 +116,15 @@ def wait_until(fn: partial[bool], retry: int, success: int) -> None:
     return
 
 
-def get_snowflakes(path):
+def get_config(path: str) -> Dict[str, List[str]]:
     with open(path, "r") as file:
-        lines = [line.strip() for line in file]
-    return lines
+        yam = yaml.safe_load(file)
+    return yam
 
 
 if __name__ == "__main__":
     config.load_kube_config()
+    cfg = get_config("config.yml")
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -129,7 +132,16 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    hosts = get_nodes(client)
+    k8s_hosts = get_nodes(client)
+    extra_hosts = cfg.get("extra_hosts")
+
+    if extra_hosts is not None:
+        for h in extra_hosts:
+            print(f"found extra node {h}")
+        hosts = k8s_hosts + extra_hosts
+    else:
+        hosts = k8s_hosts
+
     k8s_ok_partial = partial(k8s_ok, client)
     ceph_ok_partial = partial(ceph_ok, client)
 
@@ -143,10 +155,3 @@ if __name__ == "__main__":
             run_playbook(n, "apt_upgrade.yml")
         wait_until(k8s_ok_partial, 120, 2)
         wait_until(ceph_ok_partial, 120, 3)
-
-    print("---------- continuing to miscellaneous hosts ----------")
-    for n in get_snowflakes("misc_hosts"):
-        if args.reboot:
-            run_playbook(n, "reboot.yml")
-        else:
-            run_playbook(n, "apt_upgrade.yml")
