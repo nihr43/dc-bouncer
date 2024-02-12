@@ -106,7 +106,7 @@ def wait_until(fn: partial[bool], retry: int, success: int) -> None:
     if retry == 0:
         raise TimeoutError("timed out waiting")
 
-    time.sleep(5)
+    time.sleep(2)
 
     if fn():
         success -= 1
