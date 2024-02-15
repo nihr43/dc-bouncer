@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
     wait_until(k8s_ok_partial, 120, 2)
     wait_until(ceph_ok_partial, 120, 3)
-    wait_until(deployments_ok_partial, 120, 2)
+    wait_until(deployments_ok_partial, 120, 1)
 
     for n in hosts:
         if args.reboot:
@@ -176,4 +176,4 @@ if __name__ == "__main__":
             run_playbook(n, "apt_upgrade.yml")
         wait_until(k8s_ok_partial, 120, 2)
         wait_until(ceph_ok_partial, 120, 3)
-        wait_until(deployments_ok_partial, 120, 2)
+        wait_until(deployments_ok_partial, 120, 1)
