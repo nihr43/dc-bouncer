@@ -7,6 +7,7 @@ from typing import Dict, List
 import ansible_runner  # type: ignore
 from kubernetes import client, config  # type: ignore
 from functools import partial
+from urllib3.exceptions import MaxRetryError
 
 
 def get_nodes() -> list:
@@ -48,6 +49,9 @@ def k8s_ok() -> bool:
             print(node.metadata.name + " ready state is " + node_status)
 
     except ConnectionRefusedError:
+        pass
+
+    except MaxRetryError:
         pass
 
     if len(not_ready) == 0:
