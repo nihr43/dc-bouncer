@@ -2,8 +2,3 @@
 extra_hosts:
  - 10.0.0.10
  - 10.0.0.11
-
-require_healthy:
- - hugo
- - influxdb-prod
- - registry
