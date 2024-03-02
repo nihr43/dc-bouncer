@@ -1,6 +1,6 @@
 # dc-bouncer
 
-Upgrade or bounce kubernetes/ceph hosts with relative safety, with kubernetes node readiness, ceph HEALTH_OK, and deployment readiness checks between reboots.
+Upgrade or bounce kubernetes/ceph hosts with node, ceph, deployment, and daemon readiness checks between reboots.
 
 ## implementation
 
@@ -19,142 +19,76 @@ File `config.yml` specifies extra hosts to upgrade, as well as deployments to be
 extra_hosts:
  - 10.0.0.10
  - 10.0.0.11
-
-require_healthy:
- - hugo
- - influxdb-prod
- - registry
 ```
 
 ## example
 
 ```
-~/git/dc-bouncer$ python3 main.py
-INFO:root:found k8s node x470d4u-zen-420c2 at 10.0.200.1
-INFO:root:found k8s node x470d4u-zen-9679c at 10.0.200.3
-INFO:root:found k8s node x7spahf-atom-6aef0 at 10.0.254.253
-INFO:root:x470d4u-zen-420c2 ready state is True
-INFO:root:x470d4u-zen-9679c ready state is True
-INFO:root:x7spahf-atom-6aef0 ready state is True
-INFO:root:ceph state is HEALTH_OK
+[nix-shell:~/git/dc-bouncer]$ python main.py --reboot
+found k8s node x470d4u-zen-43c5a at 10.0.200.1
+found k8s node 66e3b444-3349-46af-b56e-feb1cc0aee3c at 10.0.200.3
+found k8s node x470d4u-zen-3700f at 10.0.200.2
+found k8s node x10slhf-xeon-9c3ab at 10.0.200.4
+found extra node 10.0.0.10
+found extra node 10.0.0.11
+x470d4u-zen-43c5a ready state is True
+66e3b444-3349-46af-b56e-feb1cc0aee3c ready state is True
+x470d4u-zen-3700f ready state is True
+x10slhf-xeon-9c3ab ready state is True
+ceph state is HEALTH_OK
+ceph state is HEALTH_OK
+ceph state is HEALTH_OK
+46 deployments healthy
+5 daemonsets healthy
 
-PLAY [all] *********************************************************************
+PLAY [reboot] ******************************************************************
 
 TASK [Gathering Facts] *********************************************************
 ok: [10.0.200.1]
-
-TASK [apt update] **************************************************************
-ok: [10.0.200.1]
-
-TASK [apt upgrade] *************************************************************
-changed: [10.0.200.1]
 
 TASK [reboot] ******************************************************************
 changed: [10.0.200.1]
 
-TASK [apt autoremove --purge] **************************************************
-ok: [10.0.200.1]
-
 PLAY RECAP *********************************************************************
-10.0.200.1                 : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-INFO:root:x470d4u-zen-9679c ready state is True
-INFO:root:x7spahf-atom-6aef0 ready state is True
-INFO:root:x470d4u-zen-420c2 ready state is True
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_OK
+10.0.200.1                 : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+x470d4u-zen-43c5a ready state is Unknown
+66e3b444-3349-46af-b56e-feb1cc0aee3c ready state is True
+x10slhf-xeon-9c3ab ready state is True
+x470d4u-zen-3700f ready state is True
+x10slhf-xeon-9c3ab ready state is True
+x470d4u-zen-3700f ready state is True
+66e3b444-3349-46af-b56e-feb1cc0aee3c ready state is True
+x470d4u-zen-43c5a ready state is True
+ceph state is HEALTH_WARN
+ceph state is HEALTH_WARN
+ceph state is HEALTH_OK
+ceph state is HEALTH_OK
+ceph state is HEALTH_OK
+rook-ceph-mds-home-a has unavailable replicas
+rook-ceph-mds-home-a has unavailable replicas
+rook-ceph-mds-home-a has unavailable replicas
+argocd-redis has unavailable replicas
+argocd-redis has unavailable replicas
+domain-index has unavailable replicas
+domain-index has unavailable replicas
+domain-index has unavailable replicas
+argocd-notifications-controller has unavailable replicas
+argocd-notifications-controller has unavailable replicas
+argocd-notifications-controller has unavailable replicas
+argocd-applicationset-controller has unavailable replicas
+argocd-server has unavailable replicas
+argocd-server has unavailable replicas
+argocd-repo-server has unavailable replicas
+argocd-repo-server has unavailable replicas
+46 deployments healthy
+5 daemonsets healthy
 
-PLAY [all] *********************************************************************
+PLAY [reboot] ******************************************************************
 
 TASK [Gathering Facts] *********************************************************
-ok: [10.0.200.3]
-
-TASK [apt update] **************************************************************
-ok: [10.0.200.3]
-
-TASK [apt upgrade] *************************************************************
-changed: [10.0.200.3]
+ok: [10.0.200.2]
 
 TASK [reboot] ******************************************************************
-changed: [10.0.200.3]
-
-TASK [apt autoremove --purge] **************************************************
-ok: [10.0.200.3]
-
-PLAY RECAP *********************************************************************
-10.0.200.3                 : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-INFO:root:x470d4u-zen-9679c ready state is Unknown
-INFO:root:x7spahf-atom-6aef0 ready state is True
-INFO:root:x470d4u-zen-420c2 ready state is True
-INFO:root:waiting
-INFO:root:x7spahf-atom-6aef0 ready state is True
-INFO:root:x470d4u-zen-420c2 ready state is True
-INFO:root:x470d4u-zen-9679c ready state is False
-INFO:root:waiting
-INFO:root:x7spahf-atom-6aef0 ready state is True
-INFO:root:x470d4u-zen-420c2 ready state is True
-INFO:root:x470d4u-zen-9679c ready state is True
-INFO:root:ceph state is HEALTH_OK
-
-PLAY [all] *********************************************************************
-
-TASK [Gathering Facts] *********************************************************
-ok: [10.0.254.253]
-
-TASK [apt update] **************************************************************
-ok: [10.0.254.253]
-
-TASK [apt upgrade] *************************************************************
-changed: [10.0.254.253]
-
-TASK [reboot] ******************************************************************
-changed: [10.0.254.253]
-
-TASK [apt autoremove --purge] **************************************************
-ok: [10.0.254.253]
-
-PLAY RECAP *********************************************************************
-10.0.254.253               : ok=5    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-INFO:root:x470d4u-zen-9679c ready state is True
-INFO:root:x470d4u-zen-420c2 ready state is True
-INFO:root:x7spahf-atom-6aef0 ready state is Unknown
-INFO:root:waiting
-INFO:root:x470d4u-zen-420c2 ready state is True
-INFO:root:x7spahf-atom-6aef0 ready state is Unknown
-INFO:root:x470d4u-zen-9679c ready state is True
-INFO:root:waiting
-INFO:root:x470d4u-zen-420c2 ready state is True
-INFO:root:x470d4u-zen-9679c ready state is True
-INFO:root:x7spahf-atom-6aef0 ready state is False
-INFO:root:waiting
-INFO:root:x470d4u-zen-420c2 ready state is True
-INFO:root:x470d4u-zen-9679c ready state is True
-INFO:root:x7spahf-atom-6aef0 ready state is True
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_WARN
-INFO:root:waiting
-INFO:root:ceph state is HEALTH_OK
+changed: [10.0.200.2]
+...
 ```
