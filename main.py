@@ -33,10 +33,10 @@ def k8s_ok() -> bool:
     check readiness of each kubernetes node
     """
     api = client.CoreV1Api()
+    not_ready = []
 
     try:
         node_list = api.list_node()
-        not_ready = []
 
         for node in node_list.items:
             for i in node.status.conditions:
